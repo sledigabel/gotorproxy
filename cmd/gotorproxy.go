@@ -1,12 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"net/http"
-	"os"
-
-	"github.com/elazarl/goproxy"
+	"time"
 )
 
 func main() {
@@ -15,10 +14,35 @@ func main() {
 	addr := flag.String("addr", ":8080", "proxy listen address")
 	flag.Parse()
 	log.SetPrefix("[main] ")
-	proxy := goproxy.NewProxyHttpServer()
-	proxy.Logger = log.New(os.Stdout, "[proxy] ", log.Flags())
-	proxy.Verbose = *verbose
 
-	log.Println("Starting new Proxy service")
-	log.Fatal(http.ListenAndServe(*addr, proxy))
+	run(*verbose, *addr)
+
+}
+
+func run(verbose bool, addr string) {
+	p := NewProxyRunner()
+	p.addr = addr
+	p.Verbose = verbose
+
+	go p.ProxyStart()
+
+	p.torRunner.WaitTillReady()
+	r, err := http.NewRequest(http.MethodGet, "https://wtfismyip.com/json", nil)
+	if err != nil {
+		log.Printf("Error with req: %v", err)
+	}
+
+	resp, err := p.torRunner.HandleRequest(r)
+	if err != nil {
+		log.Printf("Error with resp: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	newStr := buf.String()
+	log.Println(newStr)
+
+	time.Sleep(2 * time.Minute)
+	p.shutdown <- struct{}{}
+
 }
