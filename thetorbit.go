@@ -65,7 +65,6 @@ func (t *TorRunner) TorStart() {
 	<-t.shutdown
 	t.log.Println("Shutting down...")
 	t.Ready = false
-	t.httpClient.CloseIdleConnections()
 	t.torInstance.Close()
 	t.Started = false
 }
