@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/pem"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/elazarl/goproxy"
 )
@@ -17,6 +18,7 @@ type ProxyRunner struct {
 	proxy     *goproxy.ProxyHttpServer
 	torRunner *TorRunner
 	shutdown  chan struct{}
+	Started   bool
 }
 
 func NewProxyRunner() *ProxyRunner {
@@ -27,22 +29,33 @@ func NewProxyRunner() *ProxyRunner {
 	p.torRunner = NewTorRunner()
 	p.torRunner.Verbose = false
 	p.proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
+	p.proxy.OnRequest(goproxy.DstHostIs("proxycert")).DoFunc(
+		func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			ctx.Warnf("Sending out the Certificate Authority to: %v (%v)", r.RemoteAddr, r.UserAgent)
+			buf := new(bytes.Buffer)
+			for _, c := range goproxy.GoproxyCa.Certificate {
+				err := pem.Encode(buf, &pem.Block{Type: "CERTIFICATE", Bytes: c})
+				if err != nil {
+					p.log.Printf("Couldn't read certificate: %v", err)
+				}
+			}
+			return r, goproxy.NewResponse(r,
+				goproxy.ContentTypeText, http.StatusOK,
+				string(buf.String()))
+		})
 	p.proxy.OnRequest().DoFunc(
 		func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			if p.Verbose {
-				p.log.Printf("Received: %v", r)
-			}
 			// let's send it via Tor
 			resp, err := p.torRunner.HandleRequest(r)
 			if err != nil {
 				p.log.Printf("ERROR - Failed to connect to %v: %v\n", r.RequestURI, err)
 				return r, nil
 			}
-			if p.Verbose {
-				p.log.Printf("%s %s %s %d %d\n", r.RemoteAddr, r.Method, r.URL, resp.ContentLength, resp.StatusCode)
-			}
+			p.log.Printf("%s %s %s %d %d\n", r.RemoteAddr, r.Method, r.URL, resp.ContentLength, resp.StatusCode)
+
 			return r, resp
 		})
+
 	p.shutdown = make(chan struct{})
 	return p
 }
@@ -50,25 +63,30 @@ func NewProxyRunner() *ProxyRunner {
 func (p *ProxyRunner) ProxyStart() {
 
 	p.torRunner.Verbose = p.Verbose
-
+	p.Started = true
 	p.log.Println("Starting TOR")
 	go p.torRunner.TorStart()
 	p.torRunner.WaitTillReady()
 
-	p.log.Println("Starting proxy")
 	srv := http.Server{Addr: ":8080", Handler: p.proxy, ErrorLog: p.log}
 	go func() {
+		p.log.Println("Starting proxy")
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			p.log.Fatalf("ListenAndServe(): %v", err)
 		}
+		p.log.Println("Exiting...")
 	}()
-
+	p.log.Println("test")
 	<-p.shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	p.log.Println("Shutdown requested")
+	ctx := context.TODO()
 	if err := srv.Shutdown(ctx); err != nil {
 		p.log.Panicf("Error while stopping the proxy: %v", err)
 	}
 	p.torRunner.shutdown <- struct{}{}
-
+	// wait till tor shuts down.
+	for p.torRunner.Started {
+	}
+	p.Started = false
+	p.log.Println("Exiting proxy")
 }

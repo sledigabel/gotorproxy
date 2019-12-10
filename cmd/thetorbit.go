@@ -19,6 +19,7 @@ type TorRunner struct {
 	dialer      *tor.Dialer
 	httpClient  *http.Client
 	Ready       bool
+	Started     bool
 	shutdown    chan struct{}
 }
 
@@ -45,7 +46,7 @@ func (t *TorRunner) TorStart() {
 	if err != nil {
 		t.log.Panicf("Error while initialising TOR: %v", err)
 	}
-	dialCtx, dialCancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	dialCtx, dialCancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer dialCancel()
 	t.log.Println("Initiating Dialer")
 	t.dialer, err = t.torInstance.Dialer(dialCtx, nil)
@@ -60,8 +61,13 @@ func (t *TorRunner) TorStart() {
 	}
 
 	t.Ready = true
+	t.log.Println("Connected.")
 	<-t.shutdown
 	t.log.Println("Shutting down...")
+	t.Ready = false
+	t.httpClient.CloseIdleConnections()
+	t.torInstance.Close()
+	t.Started = false
 }
 
 func (t *TorRunner) WaitTillReady() {
