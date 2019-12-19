@@ -26,9 +26,9 @@ func main() {
 
 	var flags Flags
 	verbose := flag.Bool("v", false, "should every proxy request be logged to stdout")
-	addr := flag.String("addr", ":8080", "proxy listen address")
-	cacert := flag.String("cacert", "", "CA Certiicate path")
-	cakey := flag.String("cakey", "", "CA Key path")
+	addr := flag.String("addr", ":8081", "proxy listen address")
+	cacert := flag.String("cacert.pem", "", "CA Certiicate path")
+	cakey := flag.String("cakey.pem", "", "CA Key path")
 	flag.Parse()
 
 	flags.Verbose = *verbose

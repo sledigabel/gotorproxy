@@ -1,7 +1,13 @@
 #!/bin/bash
 
-# ln /go/bin/gotorproxy /
-/gotorproxy &
+# if the certs aren't found we'll generte them
+if [ ! -f "/ca/cacert.pem" ]
+then
+    echo "Generating CA Cert for Tor Proxy"
+    /mkcert -cert-file /ca/cacert.pem -key-file /ca/cakey.pem ${DOMAIN:-mydomain.org}
+fi
+
+/gotorproxy -cacert /ca/cacert.pem -cakey /ca/cakey.pem -addr :8081 &
 PID=$!
 
 echo "Process started with PID: ${PID}"
