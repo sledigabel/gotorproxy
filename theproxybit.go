@@ -68,7 +68,7 @@ func (p *ProxyRunner) ProxyStart() {
 	go p.torRunner.TorStart()
 	p.torRunner.WaitTillReady()
 
-	srv := http.Server{Addr: ":8080", Handler: p.proxy, ErrorLog: p.log}
+	srv := http.Server{Addr: p.addr, Handler: p.proxy, ErrorLog: p.log}
 	go func() {
 		p.log.Println("Starting proxy")
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
