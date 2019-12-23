@@ -4,7 +4,9 @@
 if [ ! -f "/ca/cacert.pem" ]
 then
     echo "Generating CA Cert for Tor Proxy"
-    /mkcert -cert-file /ca/cacert.pem -key-file /ca/cakey.pem ${DOMAIN:-mydomain.org}
+    CAROOT=/ca /mkcert -install
+    mv /ca/rootCA.pem /ca/cacert.pem
+    mv /ca/rootCA-key.pem /ca/cakey.pem
 fi
 
 /gotorproxy -cacert /ca/cacert.pem -cakey /ca/cakey.pem -addr :8081 &

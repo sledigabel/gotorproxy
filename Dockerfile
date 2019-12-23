@@ -10,13 +10,13 @@ RUN cd /go/src/github.com/cretz/tor-static && go run build.go build-all
 # RUN go get github.com/sledigabel/gotorproxy
 # RUN mkdir /code && git clone https://github.com/sledigabel/gotorproxy.git /code/gotorproxy
 RUN mkdir -p /code/gotorproxy
-ADD . /code/gotorproxy
 RUN go get \
     github.com/cretz/bine/process/embedded \
     github.com/elazarl/goproxy \
     golang.org/x/net/proxy \
     github.com/FiloSottile/mkcert
 
+ADD . /code/gotorproxy
 RUN cd /code/gotorproxy && go build -x -v -o /go/bin/gotorproxy .
 
 
@@ -27,7 +27,6 @@ COPY --from=builder /go/bin/gotorproxy /
 COPY --from=builder /go/bin/mkcert /
 
 EXPOSE 8081
-ENV DOMAIN mydomain.org
 
 RUN mkdir /ca
 
