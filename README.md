@@ -23,3 +23,7 @@ go get github.com/sledigabel/gotorproxy
 - github.com/cretz/bine
   ToR interfacing with Go. Provides a nice transport layer and does all the go heavylifting.
   
+  # TODO
+
+  - Custom Check for running proxy
+  
