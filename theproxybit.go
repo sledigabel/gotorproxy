@@ -31,6 +31,15 @@ func NewProxyRunner() *ProxyRunner {
 	p.proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 	p.proxy.OnRequest(goproxy.DstHostIs("proxycert")).DoFunc(
 		func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			ctx.Warnf("Received req for certificate from: %v (%v)", r.RemoteAddr, r.UserAgent)
+			resp := goproxy.NewResponse(r,
+				goproxy.ContentTypeHtml, http.StatusMovedPermanently,
+				"Redirecting to Certificate")
+			resp.Header.Set("Location", "http://secret/cacert.pem")
+			return r, resp
+		})
+	p.proxy.OnRequest(goproxy.UrlIs("secret/cacert.pem")).DoFunc(
+		func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			ctx.Warnf("Sending out the Certificate Authority to: %v (%v)", r.RemoteAddr, r.UserAgent)
 			buf := new(bytes.Buffer)
 			for _, c := range goproxy.GoproxyCa.Certificate {
@@ -39,9 +48,11 @@ func NewProxyRunner() *ProxyRunner {
 					p.log.Printf("Couldn't read certificate: %v", err)
 				}
 			}
-			return r, goproxy.NewResponse(r,
+			resp := goproxy.NewResponse(r,
 				goproxy.ContentTypeText, http.StatusOK,
 				string(buf.String()))
+			resp.Header.Add("content-disposition", "attachment")
+			return r, resp
 		})
 	p.proxy.OnRequest().DoFunc(
 		func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {

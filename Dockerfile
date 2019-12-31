@@ -22,13 +22,16 @@ RUN cd /code/gotorproxy && go build -x -v -o /go/bin/gotorproxy .
 
 FROM ubuntu
 
-RUN apt-get update && apt-get install -y ca-certificates openssl
+RUN apt-get update && apt-get install -y ca-certificates openssl curl
 COPY --from=builder /go/bin/gotorproxy /
 COPY --from=builder /go/bin/mkcert /
 
 EXPOSE 8081
+VOLUME /ca
 
 RUN mkdir /ca
 
+ADD check.sh /
+HEALTHCHECK --start-period=1m --retries=1 --interval=2m --timeout=1m CMD /check.sh 
 ADD start.sh /
 CMD [ "/start.sh" ]
