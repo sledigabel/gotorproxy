@@ -29,8 +29,6 @@ COPY --from=builder /go/bin/mkcert /
 EXPOSE 8081
 VOLUME /ca
 
-RUN mkdir /ca
-
 ADD check.sh /
 HEALTHCHECK --start-period=1m --retries=1 --interval=2m --timeout=1m CMD /check.sh 
 ADD start.sh /
