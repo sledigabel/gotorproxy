@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
 	"os"
 	"time"
 
@@ -18,6 +19,7 @@ type TorRunner struct {
 	log         *log.Logger
 	dialer      *tor.Dialer
 	httpClient  *http.Client
+	cookieJar   *cookiejar.Jar
 	Ready       bool
 	Started     bool
 	shutdown    chan struct{}
@@ -29,6 +31,7 @@ func NewTorRunner() *TorRunner {
 	t.torConfig = &tor.StartConf{ProcessCreator: embedded.NewCreator()}
 	t.shutdown = make(chan struct{})
 	t.Ready = false
+	t.cookieJar, _ = cookiejar.New(&cookiejar.Options{})
 	return t
 }
 
@@ -54,6 +57,7 @@ func (t *TorRunner) TorStart() {
 		t.log.Panicf("Error while dialing in: %v", err)
 	}
 	t.httpClient = &http.Client{
+		Jar: t.cookieJar,
 		Transport: &http.Transport{
 			DialContext: t.dialer.DialContext,
 		},
@@ -80,7 +84,6 @@ func (t *TorRunner) HandleRequest(req *http.Request) (*http.Response, error) {
 	}
 	// Forgetting the requestURI as this is set at receiving time.
 	req.RequestURI = ""
-
 	// send it to TOR
 	resp, err := t.httpClient.Do(req)
 

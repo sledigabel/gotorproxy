@@ -62,8 +62,9 @@ func NewProxyRunner() *ProxyRunner {
 				p.log.Printf("ERROR - Failed to connect to %v: %v\n", r.RequestURI, err)
 				return r, nil
 			}
-			p.log.Printf("%s %s %s %d %d\n", r.RemoteAddr, r.Method, r.URL, resp.ContentLength, resp.StatusCode)
-
+			if p.Verbose {
+				p.log.Printf("%s %s %s [%s] %d %d\n", r.RemoteAddr, r.Method, r.URL, r.Header, resp.ContentLength, resp.StatusCode)
+			}
 			return r, resp
 		})
 
