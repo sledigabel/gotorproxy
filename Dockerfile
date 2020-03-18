@@ -12,9 +12,11 @@ RUN cd /go/src/github.com/cretz/tor-static && go run build.go build-all
 RUN mkdir -p /code/gotorproxy
 RUN go get \
     github.com/cretz/bine/process/embedded \
-    github.com/elazarl/goproxy \
     golang.org/x/net/proxy \
     github.com/FiloSottile/mkcert
+
+RUN go get github.com/elazarl/goproxy || echo
+RUN cd /go/src/github.com/elazarl/goproxy && git checkout 296d8939
 
 ADD . /code/gotorproxy
 RUN cd /code/gotorproxy && go build -x -v -o /go/bin/gotorproxy .
