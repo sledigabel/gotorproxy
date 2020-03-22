@@ -1,5 +1,7 @@
 #!/bin/bash
 
+RENEWAL=${RENEWAL_PERIOD:-14400} # 4 hours
+
 # if the certs aren't found we'll generte them
 if [ ! -f "/ca/cacert.pem" ]
 then
@@ -9,10 +11,6 @@ then
     mv /ca/rootCA-key.pem /ca/cakey.pem
 fi
 
-/gotorproxy -cacert /ca/cacert.pem -cakey /ca/cakey.pem -addr :8081 &
-PID=$!
-
-echo "Process started with PID: ${PID}"
 
 function terminate_properly()
 {
@@ -22,8 +20,23 @@ function terminate_properly()
     kill -TERM ${PID}
     sleep .5
     ps -fp ${PID} >/dev/null && kill -TERM ${PID}
+    wait ${PID}
 }
 
-trap terminate_properly EXIT INT
+function terminate_for_real()
+{
+    terminate_properly
+    exit
+}
 
-wait ${PID}
+trap terminate_for_real EXIT INT
+
+while [ 1 ]
+do
+    /gotorproxy -cacert /ca/cacert.pem -cakey /ca/cakey.pem -addr :8081 &
+    PID=$!
+    echo "Process started with PID: ${PID}"
+    sleep ${RENEWAL}
+    terminate_properly
+done
+

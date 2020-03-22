@@ -88,7 +88,6 @@ func (p *ProxyRunner) ProxyStart() {
 		}
 		p.log.Println("Exiting...")
 	}()
-	p.log.Println("test")
 	<-p.shutdown
 	p.log.Println("Shutdown requested")
 	ctx := context.TODO()
