@@ -12,8 +12,11 @@ RUN cd /go/src/github.com/cretz/tor-static && go run build.go build-all
 RUN mkdir -p /code/gotorproxy
 RUN go get \
     github.com/cretz/bine/process/embedded \
-    golang.org/x/net/proxy \
-    github.com/FiloSottile/mkcert
+    golang.org/x/net/proxy
+
+RUN github.com/FiloSottile/mkcert || echo
+RUN cd /go/src/github.com/FiloSottile/mkcert && git checkout a21de51ac
+RUN cd /go/src/github.com/FiloSottile/mkcert && go build -o /go/bin/mkcert
 
 RUN go get github.com/elazarl/goproxy || echo
 RUN cd /go/src/github.com/elazarl/goproxy && git checkout 296d8939
