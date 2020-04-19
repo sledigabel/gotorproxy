@@ -14,7 +14,7 @@ RUN go get \
     github.com/cretz/bine/process/embedded \
     golang.org/x/net/proxy
 
-RUN github.com/FiloSottile/mkcert || echo
+RUN go get github.com/FiloSottile/mkcert || echo
 RUN cd /go/src/github.com/FiloSottile/mkcert && git checkout a21de51ac
 RUN cd /go/src/github.com/FiloSottile/mkcert && go build -o /go/bin/mkcert
 
