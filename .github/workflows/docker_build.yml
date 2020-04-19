@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Docker Action
-      uses: zenato/docker-action@v1.0.1
+      uses: manusa/actions-publish-docker@master
       with:
         name: docker.io/sledigabel/gotorproxy
         username: ${{ secrets.DOCKER_HUB_LOGIN }}
